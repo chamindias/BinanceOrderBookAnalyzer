@@ -13,15 +13,17 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # --- NEW STEP: ESTABLISH VPN CONNECTION ---
-      # This step connects to your VPN before any Python code runs.
-      # All subsequent network traffic will be routed through the VPN.
+      # --- NEW, CORRECTED VPN STEP ---
+      # This uses a more stable and popular community action to connect to the VPN.
+      # The input names (CONFIG, USERNAME, PASSWORD) are in uppercase.
       - name: Start VPN connection
-        uses: "social-medial-expert/openvpn-action@v1.2.2"
+        uses: "spheramid/openvpn-github-action@v2.0.0"
         with:
           CONFIG_DATA: ${{ secrets.OPENVPN_CONFIG }}
           USERNAME: ${{ secrets.VPN_USERNAME }}
           PASSWORD: ${{ secrets.VPN_PASSWORD }}
+          # This is an optional but good addition to see if the VPN connected successfully.
+          VERIFY: 'true'
 
       # The rest of the steps are the same as before
       - name: Set up Python
@@ -35,6 +37,6 @@ jobs:
       - name: Create API key file from secret
         run: echo "${{ secrets.CMC_API_KEY }}" > CoinMarketCapAPIKey.txt
 
-      # This step will now run through the VPN
+      # This step will now run through the new VPN action
       - name: Run the Order Flow Analyzer script
         run: python3 GITOrderFlowImbalanceAnalyzer.py
