@@ -27,7 +27,6 @@ import time          # For timing the script's execution and adding delays
 from datetime import datetime
 from zoneinfo import ZoneInfo # For timezone-aware datetimes
 from concurrent.futures import ThreadPoolExecutor, as_completed # For parallel processing (if needed)
-from tqdm import tqdm
 
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # API and Data Fetching Functions
@@ -305,6 +304,7 @@ def main():
     print(f"Found {len(coins_to_analyze)} matching coins to analyze.")
 
     # Step 5: Execute the heavy analysis on our final list.
+    print("\nCoin analysis started.")
     all_coin_data = []
     # This script is set to run sequentially (max_workers=1) to be safe with API limits.
     # The delays inside fetch_and_process_symbol are crucial for this.
@@ -312,11 +312,8 @@ def main():
         # Create a dictionary of future tasks to run.
         future_to_symbol = {executor.submit(fetch_and_process_symbol, symbol): symbol for symbol in coins_to_analyze}
         
-        # Wrap the as_completed iterator with tqdm to create a progress bar.
-        # 'desc' sets the static text, and 'unit' sets the item name.
-        progress_bar = tqdm(as_completed(future_to_symbol), total=len(coins_to_analyze), desc="Analyzing Coins", unit="coin")
-        
-        for future in progress_bar:
+        # Use the standard as_completed iterator without the tqdm wrapper.
+        for future in as_completed(future_to_symbol):
             symbol = future_to_symbol[future]
             try:
                 result = future.result()
@@ -325,11 +322,8 @@ def main():
             except Exception as exc:
                 sys.stderr.write(f"\n{symbol} generated an exception: {exc}\n")
 
-            # The time.sleep() delay from the original fetch function is still active,
-            # ensuring we remain compliant with API rate limits.
+    print("Coin analysis completed.")
 
-    print()
-    
     # Step 6: Sort the main result list by its original market cap rank for the summary table.
     all_coin_data.sort(key=lambda x: coins_to_analyze.index(x['coin']))
     
