@@ -13,7 +13,6 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # --- NEW, ROBUST VPN SETUP: EXTRACTS INLINE KEYS ---
       - name: Install and configure OpenVPN
         run: |
           # Step 1: Install the openvpn software package.
@@ -23,34 +22,38 @@ jobs:
           # Step 2: Write the .ovpn configuration from our secret into a temporary file.
           echo "${{ secrets.OPENVPN_CONFIG }}" > temp_config.ovpn
 
-          # Step 3: Parse the .ovpn file and extract inline keys/certs into separate files.
-          # This is the standard way to handle modern .ovpn files on command-line clients.
-          # We create a final, clean config file that points to these separate key files.
+          # Step 3: Parse the temp file and extract all inline keys/certs into separate files.
           awk '/<ca>/{flag=1; next} /<\/ca>/{flag=0} flag' temp_config.ovpn > ca.crt
           awk '/<key>/{flag=1; next} /<\/key>/{flag=0} flag' temp_config.ovpn > client.key
           awk '/<cert>/{flag=1; next} /<\/cert>/{flag=0} flag' temp_config.ovpn > client.crt
           awk '/<tls-auth>/{flag=1; next} /<\/tls-auth>/{flag=0} flag' temp_config.ovpn > tls.key
           
-          # Create the final, clean config file by removing the inline blocks.
+          # Step 4: Create the final config file by removing the inline blocks from the temp file.
           grep -vE "<ca>|<cert>|<key>|<tls-auth>" temp_config.ovpn > protonvpn.ovpn
 
-          # Step 4: Add the paths to the new key files into the clean config.
+          # --- THIS IS THE CRITICAL FIX ---
+          # Step 4.1: Sanitize the NEWLY created protonvpn.ovpn file by removing its first line.
+          # This handles any metadata/comment that the grep command left behind and ensures
+          # the file starts with a valid OpenVPN directive.
+          sudo sed -i '1d' protonvpn.ovpn
+
+          # Step 5: Add the paths to the new key files into the clean config.
           echo -e "\nca ca.crt" >> protonvpn.ovpn
           echo "cert client.crt" >> protonvpn.ovpn
           echo "key client.key" >> protonvpn.ovpn
-          echo "tls-auth tls.key 1" >> protonvpn.ovpn # '1' is often needed for tls-auth
+          echo "tls-auth tls.key 1" >> protonvpn.ovpn
 
-          # Step 5: Write the username and password into a separate auth file.
+          # Step 6: Write the username and password into a separate auth file.
           echo "${{ secrets.VPN_USERNAME }}" > auth.txt
           echo "${{ secrets.VPN_PASSWORD }}" >> auth.txt
 
-          # Step 6: Launch the OpenVPN client with the new, clean configuration.
+          # Step 7: Launch the OpenVPN client with the new, fully clean configuration.
           sudo openvpn --config protonvpn.ovpn --auth-user-pass auth.txt --daemon --log openvpn.log
 
-          # Step 7: Wait for the connection to establish.
-          sleep 8 # Increased sleep time for more reliability
+          # Step 8: Wait for the connection to establish.
+          sleep 8
 
-          # Step 8: Verify the connection and check the log.
+          # Step 9: Verify the connection and check the log.
           echo "--- Verifying public IP address ---"
           curl -s http://whatismyip.akamai.com/
           echo "\n--- Checking VPN log for status ---"
