@@ -27,6 +27,7 @@ import time          # For timing the script's execution and adding delays
 from datetime import datetime
 from zoneinfo import ZoneInfo # For timezone-aware datetimes
 from concurrent.futures import ThreadPoolExecutor, as_completed # For parallel processing (if needed)
+from tqdm import tqdm
 
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # API and Data Fetching Functions
@@ -271,7 +272,7 @@ def main():
     if not api_key: return
 
     # Step 2: Define the number of coins to analyze. This value is now hardcoded.
-    FINAL_COIN_COUNT = 200 # You can change this value to 50, 150, etc.
+    FINAL_COIN_COUNT = 120 # You can change this value to 50, 150, etc.
     print(f"Analysis configured to run for {FINAL_COIN_COUNT} coins.")
     
     # Step 3: Fetch the initial lists of coins from both APIs.
@@ -305,27 +306,27 @@ def main():
 
     # Step 5: Execute the heavy analysis on our final list.
     all_coin_data = []
-    total_symbols = len(coins_to_analyze)
     # This script is set to run sequentially (max_workers=1) to be safe with API limits.
-    # The delays inside and after fetch_and_process_symbol are crucial for this.
+    # The delays inside fetch_and_process_symbol are crucial for this.
     with ThreadPoolExecutor(max_workers=1) as executor:
+        # Create a dictionary of future tasks to run.
         future_to_symbol = {executor.submit(fetch_and_process_symbol, symbol): symbol for symbol in coins_to_analyze}
         
-        for i, future in enumerate(as_completed(future_to_symbol), 1):
+        # Wrap the as_completed iterator with tqdm to create a progress bar.
+        # 'desc' sets the static text, and 'unit' sets the item name.
+        progress_bar = tqdm(as_completed(future_to_symbol), total=len(coins_to_analyze), desc="Analyzing Coins", unit="coin")
+        
+        for future in progress_bar:
             symbol = future_to_symbol[future]
             try:
                 result = future.result()
                 if result:
                     all_coin_data.append(result)
-                # Add a delay between processing each coin to stay well within rate limits.
-                time.sleep(0.2)
             except Exception as exc:
                 sys.stderr.write(f"\n{symbol} generated an exception: {exc}\n")
-            
-            # This creates the dynamic, single-line progress indicator.
-            progress_text = f"Processing ({i}/{total_symbols}): {symbol}".ljust(60)
-            sys.stdout.write(f"\r{progress_text}")
-            sys.stdout.flush()
+
+            # The time.sleep() delay from the original fetch function is still active,
+            # ensuring we remain compliant with API rate limits.
 
     print()
     
