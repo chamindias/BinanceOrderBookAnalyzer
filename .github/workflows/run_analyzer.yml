@@ -22,20 +22,21 @@ jobs:
           # Step 2: Write the .ovpn configuration from our secret into a temporary file.
           echo "${{ secrets.OPENVPN_CONFIG }}" > temp_config.ovpn
 
-          # Step 3: Parse the temp file and extract all inline keys/certs into separate files.
+          # Step 3: Extract all inline keys/certs into separate files. This part was correct.
           awk '/<ca>/{flag=1; next} /<\/ca>/{flag=0} flag' temp_config.ovpn > ca.crt
           awk '/<key>/{flag=1; next} /<\/key>/{flag=0} flag' temp_config.ovpn > client.key
           awk '/<cert>/{flag=1; next} /<\/cert>/{flag=0} flag' temp_config.ovpn > client.crt
           awk '/<tls-auth>/{flag=1; next} /<\/tls-auth>/{flag=0} flag' temp_config.ovpn > tls.key
           
-          # Step 4: Create the final config file by removing the inline blocks from the temp file.
-          grep -vE "<ca>|<cert>|<key>|<tls-auth>" temp_config.ovpn > protonvpn.ovpn
-
           # --- THIS IS THE CRITICAL FIX ---
-          # Step 4.1: Sanitize the NEWLY created protonvpn.ovpn file by removing its first line.
-          # This handles any metadata/comment that the grep command left behind and ensures
-          # the file starts with a valid OpenVPN directive.
-          sudo sed -i '1d' protonvpn.ovpn
+          # Step 4: Create the final, clean config file by properly removing the entire
+          # multi-line blocks, instead of just the tag lines.
+          # We start with a copy and then use 'sed' to delete the blocks in-place.
+          cp temp_config.ovpn protonvpn.ovpn
+          sed -i '/<ca>/,/<\/ca>/d' protonvpn.ovpn
+          sed -i '/<cert>/,/<\/cert>/d' protonvpn.ovpn
+          sed -i '/<key>/,/<\/key>/d' protonvpn.ovpn
+          sed -i '/<tls-auth>/,/<\/tls-auth>/d' protonvpn.ovpn
 
           # Step 5: Add the paths to the new key files into the clean config.
           echo -e "\nca ca.crt" >> protonvpn.ovpn
@@ -53,11 +54,11 @@ jobs:
           # Step 8: Wait for the connection to establish.
           sleep 8
 
-          # Step 9: Verify the connection and check the log.
+          # Step 9: Verify the connection and check the log for success.
           echo "--- Verifying public IP address ---"
           curl -s http://whatismyip.akamai.com/
-          echo "\n--- Checking VPN log for status ---"
-          tail -n 15 openvpn.log
+          echo "\n--- Checking VPN log for status (look for 'Initialization Sequence Completed') ---"
+          tail -n 20 openvpn.log
 
       # The rest of the workflow continues as before.
       - name: Set up Python
