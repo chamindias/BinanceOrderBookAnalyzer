@@ -15,36 +15,26 @@ jobs:
 
       - name: Install and configure OpenVPN
         run: |
-          # Set flags to exit on error and print commands for debugging
+          # Set flags to exit on error and print commands
           set -ex
 
-          # Step 1: Install the openvpn software package.
+          # Step 1: Install OpenVPN
           echo "--- 1. Installing OpenVPN ---"
           sudo apt-get update
           sudo apt-get install -y openvpn
 
-          # Step 2: Write the .ovpn configuration directly from the secret.
-          echo "--- 2. Writing secret to protonvpn.ovpn ---"
+          # Step 2: Write the .ovpn configuration from the secret.
           echo "${{ secrets.OPENVPN_CONFIG }}" > protonvpn.ovpn
 
           # Step 3: Write the username and password into a separate auth file.
-          echo "--- 3. Creating auth.txt file ---"
           echo "${{ secrets.VPN_USERNAME }}" > auth.txt
           echo "${{ secrets.VPN_PASSWORD }}" >> auth.txt
 
-          # --- THIS IS THE CRITICAL FIX ---
-          # Step 4: Modify the main config file to tell it to use our auth file.
-          # The 'auth-user-pass' directive inside the file makes this connection.
+          # Step 4: Modify the main config file to use our auth file.
           echo "--- 4. Modifying config to use auth.txt ---"
           echo "auth-user-pass auth.txt" >> protonvpn.ovpn
           
-          # --- DIAGNOSTIC STEP: SHOW THE FINAL CONFIG BEFORE LAUNCH ---
-          echo "--- 4.1. Displaying final protonvpn.ovpn before launch ---"
-          cat protonvpn.ovpn
-          echo "--- End of final config display ---"
-
-          # Step 5: Launch the OpenVPN client. We no longer pass '--auth-user-pass' on the command line,
-          # as the config file now handles it internally.
+          # Step 5: Launch the OpenVPN client as a background daemon.
           echo "--- 5. Launching OpenVPN client ---"
           sudo openvpn --config protonvpn.ovpn --daemon --log openvpn.log
 
@@ -55,7 +45,9 @@ jobs:
           # Step 7: Final verification.
           echo "--- 7. Final Verification ---"
           echo "--- Checking VPN log for status (look for 'Initialization Sequence Completed') ---"
-          cat openvpn.log
+          # --- THIS IS THE CRITICAL FIX ---
+          # Use 'sudo' to read the log file created by the root user.
+          sudo cat openvpn.log
           echo "--- Verifying public IP address ---"
           curl --fail http://whatismyip.akamai.com/ || (echo "Curl failed, VPN did not connect. See log above." && exit 1)
 
