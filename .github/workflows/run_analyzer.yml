@@ -13,19 +13,40 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # --- NEW, CORRECTED VPN STEP ---
-      # This uses a more stable and popular community action to connect to the VPN.
-      # The input names (CONFIG, USERNAME, PASSWORD) are in uppercase.
-      - name: Start VPN connection
-        uses: "spheramid/openvpn-github-action@v2.0.0"
-        with:
-          CONFIG_DATA: ${{ secrets.OPENVPN_CONFIG }}
-          USERNAME: ${{ secrets.VPN_USERNAME }}
-          PASSWORD: ${{ secrets.VPN_PASSWORD }}
-          # This is an optional but good addition to see if the VPN connected successfully.
-          VERIFY: 'true'
+      # --- NEW, ROBUST VPN SETUP USING OFFICIAL TOOLS ---
+      - name: Install and configure OpenVPN
+        run: |
+          # Step 1: Install the openvpn software package on the Ubuntu runner.
+          # The 'sudo' command gives administrative privileges for installation.
+          sudo apt-get update
+          sudo apt-get install -y openvpn
 
-      # The rest of the steps are the same as before
+          # Step 2: Write the .ovpn configuration from our secret into a file.
+          echo "${{ secrets.OPENVPN_CONFIG }}" > protonvpn.ovpn
+
+          # Step 3: Write the username and password into a separate auth file for security.
+          # This is the standard way to provide credentials to the OpenVPN client.
+          echo "${{ secrets.VPN_USERNAME }}" > auth.txt
+          echo "${{ secrets.VPN_PASSWORD }}" >> auth.txt
+
+          # Step 4: Launch the OpenVPN client in the background.
+          # 'sudo openvpn' runs the client with the necessary permissions.
+          # '--config' specifies our configuration file.
+          # '--auth-user-pass' tells it to read credentials from our auth file.
+          # '--daemon' runs the process in the background so the workflow can continue.
+          # '--log' writes the connection status to a log file for debugging.
+          sudo openvpn --config protonvpn.ovpn --auth-user-pass auth.txt --daemon --log openvpn.log
+
+          # Step 5: Wait a few seconds for the VPN connection to be fully established.
+          sleep 5
+
+          # Step 6 (Optional but recommended): Verify the connection.
+          # This command fetches the current public IP address as seen by the outside world.
+          # It should now be the IP of your VPN server, not the GitHub runner.
+          echo "Verifying public IP address after VPN connection..."
+          curl -s http://whatismyip.akamai.com/
+
+      # The rest of the steps are the same as before and will now run through the VPN tunnel.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -37,6 +58,5 @@ jobs:
       - name: Create API key file from secret
         run: echo "${{ secrets.CMC_API_KEY }}" > CoinMarketCapAPIKey.txt
 
-      # This step will now run through the new VPN action
       - name: Run the Order Flow Analyzer script
         run: python3 GITOrderFlowImbalanceAnalyzer.py
