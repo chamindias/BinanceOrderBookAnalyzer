@@ -148,7 +148,7 @@ def fetch_and_process_symbol(symbol):
     limit_buy_value, limit_sell_value = calculate_passive_order_value(symbol)
     # Add a small, crucial delay between the two heavy API calls. This prevents sending a
     # rapid burst of requests and makes the script much safer from rate-limiting.
-    time.sleep(0.2)
+    time.sleep(0.1)
     # Fetch active data (trade flow).
     market_buy_value, market_sell_value = calculate_active_trade_value(symbol)
     
