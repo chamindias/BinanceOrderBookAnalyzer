@@ -15,62 +15,45 @@ jobs:
 
       - name: Install and configure OpenVPN
         run: |
-          # Set flags to exit on error and print commands
+          # Set flags to exit on error and print commands for debugging
           set -ex
 
-          # Step 1: Install OpenVPN
+          # Step 1: Install the openvpn software package.
           echo "--- 1. Installing OpenVPN ---"
           sudo apt-get update
           sudo apt-get install -y openvpn
 
-          # Step 2: Write the secret to a temporary file
-          echo "--- 2. Writing secret to temp_config.ovpn ---"
-          echo "${{ secrets.OPENVPN_CONFIG }}" > temp_config.ovpn
+          # Step 2: Write the .ovpn configuration directly from the secret.
+          echo "--- 2. Writing secret to protonvpn.ovpn ---"
+          echo "${{ secrets.OPENVPN_CONFIG }}" > protonvpn.ovpn
 
-          # --- THIS IS THE CRITICAL FIX ---
-          # Step 3: Extract inline keys/certs using a robust pattern that handles attributes.
-          # The pattern '/<tag[ >]/' matches '<tag>' OR '<tag ' (with a space),
-          # correctly finding tags like <key direction="1">.
-          echo "--- 3. Extracting keys with robust pattern ---"
-          awk '/<ca[ >]/{flag=1; next} /<\/ca>/{flag=0} flag' temp_config.ovpn > ca.crt
-          awk '/<key[ >]/{flag=1; next} /<\/key>/{flag=0} flag' temp_config.ovpn > client.key
-          awk '/<cert[ >]/{flag=1; next} /<\/cert>/{flag=0} flag' temp_config.ovpn > client.crt
-          awk '/<tls-auth[ >]/{flag=1; next} /<\/tls-auth>/{flag=0} flag' temp_config.ovpn > tls.key
-
-          # --- DIAGNOSTIC: Verify key extraction ---
-          echo "--- 3.1. Verifying extracted key files (should be > 0 bytes) ---"
-          ls -l ca.crt client.key client.crt tls.key
-          
-          # Step 4: Create a clean config file by properly removing the multi-line blocks.
-          echo "--- 4. Creating clean protonvpn.ovpn config ---"
-          cp temp_config.ovpn protonvpn.ovpn
-          sed -i '/<ca[ >]/,/<\/ca>/d' protonvpn.ovpn
-          sed -i '/<cert[ >]/,/<\/cert>/d' protonvpn.ovpn
-          sed -i '/<key[ >]/,/<\/key>/d' protonvpn.ovpn
-          sed -i '/<tls-auth[ >]/,/<\/tls-auth>/d' protonvpn.ovpn
-
-          # Step 5: Add the paths to the new key files into the clean config.
-          echo "--- 5. Appending key paths to clean config ---"
-          echo -e "\nca ca.crt" >> protonvpn.ovpn
-          echo "cert client.crt" >> protonvpn.ovpn
-          echo "key client.key" >> protonvpn.ovpn
-          echo "tls-auth tls.key 1" >> protonvpn.ovpn
-
-          # Step 6: Write credentials to an auth file.
-          echo "--- 6. Creating auth.txt file ---"
+          # Step 3: Write the username and password into a separate auth file.
+          echo "--- 3. Creating auth.txt file ---"
           echo "${{ secrets.VPN_USERNAME }}" > auth.txt
           echo "${{ secrets.VPN_PASSWORD }}" >> auth.txt
 
-          # Step 7: Launch the OpenVPN client.
-          echo "--- 7. Launching OpenVPN client ---"
-          sudo openvpn --config protonvpn.ovpn --auth-user-pass auth.txt --daemon --log openvpn.log
+          # --- THIS IS THE CRITICAL FIX ---
+          # Step 4: Modify the main config file to tell it to use our auth file.
+          # The 'auth-user-pass' directive inside the file makes this connection.
+          echo "--- 4. Modifying config to use auth.txt ---"
+          echo "auth-user-pass auth.txt" >> protonvpn.ovpn
+          
+          # --- DIAGNOSTIC STEP: SHOW THE FINAL CONFIG BEFORE LAUNCH ---
+          echo "--- 4.1. Displaying final protonvpn.ovpn before launch ---"
+          cat protonvpn.ovpn
+          echo "--- End of final config display ---"
 
-          # Step 8: Wait for connection.
-          echo "--- 8. Waiting for VPN to establish ---"
+          # Step 5: Launch the OpenVPN client. We no longer pass '--auth-user-pass' on the command line,
+          # as the config file now handles it internally.
+          echo "--- 5. Launching OpenVPN client ---"
+          sudo openvpn --config protonvpn.ovpn --daemon --log openvpn.log
+
+          # Step 6: Wait for the connection to establish.
+          echo "--- 6. Waiting for VPN to establish ---"
           sleep 10
 
-          # Step 9: Final verification.
-          echo "--- 9. Final Verification ---"
+          # Step 7: Final verification.
+          echo "--- 7. Final Verification ---"
           echo "--- Checking VPN log for status (look for 'Initialization Sequence Completed') ---"
           cat openvpn.log
           echo "--- Verifying public IP address ---"
