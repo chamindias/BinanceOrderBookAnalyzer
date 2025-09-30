@@ -13,40 +13,39 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # --- NEW, ROBUST VPN SETUP USING OFFICIAL TOOLS ---
       - name: Install and configure OpenVPN
         run: |
-          # Step 1: Install the openvpn software package on the Ubuntu runner.
-          # The 'sudo' command gives administrative privileges for installation.
+          # Step 1: Install the openvpn software package.
           sudo apt-get update
           sudo apt-get install -y openvpn
 
           # Step 2: Write the .ovpn configuration from our secret into a file.
           echo "${{ secrets.OPENVPN_CONFIG }}" > protonvpn.ovpn
+          
+          # --- THIS IS THE CRITICAL FIX ---
+          # Step 2.1: Sanitize the config file by removing the first line,
+          # which can sometimes contain non-standard metadata that causes errors.
+          # The 'sed -i '1d'' command edits the file in-place and deletes the 1st line.
+          sudo sed -i '1d' protonvpn.ovpn
 
-          # Step 3: Write the username and password into a separate auth file for security.
-          # This is the standard way to provide credentials to the OpenVPN client.
+          # Step 3: Write the username and password into a separate auth file.
           echo "${{ secrets.VPN_USERNAME }}" > auth.txt
           echo "${{ secrets.VPN_PASSWORD }}" >> auth.txt
 
           # Step 4: Launch the OpenVPN client in the background.
-          # 'sudo openvpn' runs the client with the necessary permissions.
-          # '--config' specifies our configuration file.
-          # '--auth-user-pass' tells it to read credentials from our auth file.
-          # '--daemon' runs the process in the background so the workflow can continue.
-          # '--log' writes the connection status to a log file for debugging.
           sudo openvpn --config protonvpn.ovpn --auth-user-pass auth.txt --daemon --log openvpn.log
 
-          # Step 5: Wait a few seconds for the VPN connection to be fully established.
+          # Step 5: Wait for the VPN connection to be fully established.
           sleep 5
 
-          # Step 6 (Optional but recommended): Verify the connection.
-          # This command fetches the current public IP address as seen by the outside world.
-          # It should now be the IP of your VPN server, not the GitHub runner.
-          echo "Verifying public IP address after VPN connection..."
+          # Step 6: Verify the connection and check the log for errors.
+          echo "--- Verifying public IP address ---"
           curl -s http://whatismyip.akamai.com/
+          echo "\n--- Checking VPN log for errors ---"
+          # This will show the last few lines of the log, which is helpful for debugging.
+          tail -n 10 openvpn.log
 
-      # The rest of the steps are the same as before and will now run through the VPN tunnel.
+      # The rest of the steps are the same as before.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
