@@ -1,0 +1,42 @@
+# A descriptive name for your workflow
+name: Run Order Flow Analyzer
+
+# Defines when the workflow will run
+on:
+  # Allows you to run the workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # Sets up the schedule using cron syntax
+  schedule:
+    # Runs at minutes 0, 10, 20, 30, 40, and 50 of every hour
+    - cron: '*/10 * * * *'
+
+# Defines the jobs to be run
+jobs:
+  run-script:
+    # Runs the job on a standard, free virtual machine
+    runs-on: ubuntu-latest
+
+    # The sequence of steps to execute
+    steps:
+      # 1. Downloads your code into the virtual machine
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # 2. Installs Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Installs the 'requests' library
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Securely creates the API key file from the GitHub Secret
+      - name: Create API key file from secret
+        run: echo "${{ secrets.CMC_API_KEY }}" > CoinMarketCapAPIKey.txt
+
+      # 5. Executes your Python script
+      - name: Run the Order Flow Analyzer script
+        run: python3 GITOrderFlowImbalanceAnalyzer.py
