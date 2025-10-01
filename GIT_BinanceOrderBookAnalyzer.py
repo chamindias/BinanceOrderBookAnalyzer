@@ -340,7 +340,7 @@ def main():
     
     # --- HARDCODED CONFIGURATION ---
     print("\n--- GitHub Actions Configuration ---")
-    FINAL_COIN_COUNT = 100
+    FINAL_COIN_COUNT = 150
     ORDER_BOOK_DEPTH = 500
     print(f"Target Coins: {FINAL_COIN_COUNT}")
     print(f"Order Book Depth: {ORDER_BOOK_DEPTH}")
