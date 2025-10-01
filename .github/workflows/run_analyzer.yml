@@ -1,8 +1,12 @@
 name: Run Binance Order Book Analyzer
 
 on:
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-   schedule:
+
+  # Runs the workflow on a schedule
+  schedule:
+    # This will run at :00, :10, :20, :30, :40, and :50 past the hour
     - cron: '*/10 * * * *'
 
 jobs:
@@ -45,13 +49,10 @@ jobs:
           # Step 7: Final verification.
           echo "--- 7. Final Verification ---"
           echo "--- Checking VPN log for status (look for 'Initialization Sequence Completed') ---"
-          # --- THIS IS THE CRITICAL FIX ---
-          # Use 'sudo' to read the log file created by the root user.
           sudo cat openvpn.log
           echo "--- Verifying public IP address ---"
           curl --fail http://whatismyip.akamai.com/ || (echo "Curl failed, VPN did not connect. See log above." && exit 1)
 
-      # The rest of the workflow continues as before.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
