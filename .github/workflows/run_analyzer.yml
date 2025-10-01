@@ -64,4 +64,4 @@ jobs:
         run: echo "${{ secrets.CMC_API_KEY }}" > CoinMarketCapAPIKey.txt
 
       - name: Run the Order Flow Analyzer script
-        run: python3 GITOrderFlowImbalanceAnalyzer.py
+        run: python3 GIT_BinanceOrderBookAnalyzer.py
