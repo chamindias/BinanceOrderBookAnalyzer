@@ -6,7 +6,7 @@ on:
 
   # Runs the workflow on a schedule
   schedule:
-    # This will run at :00, :10, :20, :30, :40, and :50 past the hour
+    # This will run at :00, :15, :30, and :45 past the hour
     - cron: '*/15 * * * *'
 
 jobs:
