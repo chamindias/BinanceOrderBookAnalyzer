@@ -7,7 +7,7 @@ on:
   # Runs the workflow on a schedule
   schedule:
     # This will run at :00, :10, :20, :30, :40, and :50 past the hour
-    - cron: '*/10 * * * *'
+    - cron: '*/15 * * * *'
 
 jobs:
   run-script:
