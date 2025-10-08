@@ -6,8 +6,8 @@ on:
 
   # Runs the workflow on a schedule
   schedule:
-    # This will run every 10 minutes
-    - cron: '*/10 * * * *'
+    # This will run every 5 minutes
+    - cron: '*/5 * * * *'
 
 jobs:
   run-script:
