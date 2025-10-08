@@ -173,8 +173,8 @@ def check_conditions(symbol, total_symbols):
         # This block ensures the alert printout doesn't clash with the status line.
         with lock:
             # First, overwrite the "Processing..." line with blank spaces to clear it.
-            sys.stdout.write(" " * 60 + "\r")
-            sys.stdout.flush()
+            #sys.stdout.write(" " * 60 + "\r")
+            #sys.stdout.flush()
             
             # Then, print the formatted alert.
             chart_url = f"https://binance.com/en/futures/{symbol}"
@@ -182,7 +182,7 @@ def check_conditions(symbol, total_symbols):
             print(f"Price: {current_price}")
             print(f"Time: {ist_time}")
             print(f"URL: {chart_url}")
-            #print("\n")
+            print("\n")
 
 def main():
     """
