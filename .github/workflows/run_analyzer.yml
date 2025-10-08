@@ -6,8 +6,8 @@ on:
 
   # Runs the workflow on a schedule
   schedule:
-    # This will run every 5 minutes
-    - cron: '*/5 * * * *'
+    # This will run every day at 12:00 AM IST (18:30 UTC)
+    - cron: '30 18 * * *'
 
 jobs:
   run-script:
@@ -75,4 +75,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run the Swing High Rejection Detector script
-        run: python3 SwingHighRejectionDetector.py
+        run: python3 GIT_SwingHighRejectionDetector
