@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
 
   # Runs the workflow on a schedule
-  schedule:
+  #schedule:
     # This will run every day at 12:00 AM IST (18:30 UTC)
-    - cron: '30 18 * * *'
+    #- cron: '30 18 * * *'
 
 jobs:
   run-script:
