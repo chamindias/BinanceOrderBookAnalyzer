@@ -105,8 +105,8 @@ def check_conditions(symbol, total_symbols):
         # The padding `{symbol:<15}` ensures the line is long enough to
         # overwrite previous, shorter symbol names completely.
         status_message = f"Processing ({processed_count}/{total_symbols}) {symbol:<15}\r"
-        sys.stdout.write(status_message)
-        sys.stdout.flush() # Forces the output to be written to the console immediately.
+        #sys.stdout.write(status_message)
+        #sys.stdout.flush() # Forces the output to be written to the console immediately.
 
     time.sleep(SLEEP_DURATION)
     klines = get_candle_data(symbol, TIMEFRAME)
