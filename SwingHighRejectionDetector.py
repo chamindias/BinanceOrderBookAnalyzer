@@ -182,7 +182,7 @@ def check_conditions(symbol, total_symbols):
             print(f"Price: {current_price}")
             print(f"Time: {ist_time}")
             print(f"URL: {chart_url}")
-            print("\n")
+            #print("\n")
 
 def main():
     """
@@ -222,8 +222,8 @@ def main():
     seconds = int(total_seconds % 60)
 
     # Clear the final "Processing..." line before printing the runtime.
-    sys.stdout.write(" " * 60 + "\r")
-    sys.stdout.flush()
+    #sys.stdout.write(" " * 60 + "\r")
+    #sys.stdout.flush()
 
     print(f"Runtime: {minutes} minutes {seconds} seconds\n")
     print("Scan complete.")
