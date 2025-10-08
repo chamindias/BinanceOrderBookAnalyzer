@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
 
   # Runs the workflow on a schedule
-  schedule:
+  #schedule:
     # This will run every 10 minutes
-    - cron: '*/10 * * * *'
+    #- cron: '*/10 * * * *'
 
 jobs:
   run-script:
