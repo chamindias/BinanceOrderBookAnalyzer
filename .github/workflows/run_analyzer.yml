@@ -1,4 +1,4 @@
-name: Swing High Rejection Detector
+name: 1H Swing High Rejection Detector
 
 on:
   # Allows you to run this workflow manually from the Actions tab
@@ -75,4 +75,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run the Swing High Rejection Detector script
-        run: python3 GIT_SwingHighRejectionDetector.py
+        run: python3 GIT_1H_SwingHighRejectionDetector.py
