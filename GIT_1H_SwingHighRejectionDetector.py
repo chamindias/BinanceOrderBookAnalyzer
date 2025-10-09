@@ -29,7 +29,7 @@ MAX_WORKERS = 3
 # overwhelming the API with too many requests in a very short time.
 SLEEP_DURATION = 0.4
 
-MINUTES_BETWEEN_SCANS = 1
+MINUTES_BETWEEN_SCANS = 10
 
 # --- Global variables for tracking progress across all threads ---
 # A counter for the number of symbols processed so far. Must be global to be
